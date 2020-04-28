@@ -256,7 +256,7 @@ public Action donate(int client, int args) {
 		{
 			EmitSoundToAll(ses[target]); 
 			ShowOverlayToAll(resim[target]);
-			CreateTimer(7.0, sil);
+			CreateTimer(4.5, sil);
 		}
 		else 
 		{ 
@@ -270,7 +270,7 @@ public Action donate(int client, int args) {
 			if(IsClientInGame(i))
 			{        
 				Handle hHudText = CreateHudSynchronizer();
-				SetHudTextParams(-1.0, -0.60, 7.0, 130, 34, 33, 255, 2, 0.1, 0.1, 0.1);
+				SetHudTextParams(-1.0, -0.60, 4.5, 130, 34, 33, 255, 2, 0.1, 0.1, 0.1);
 				ShowSyncHudText(i, hHudText, "%s", mesaj);
 				CloseHandle(hHudText);	
 			}
@@ -280,11 +280,6 @@ public Action donate(int client, int args) {
 	}
 	
 	return Plugin_Handled;
-}
-
-public Action sil(Handle timer)
-{
-	ShowOverlayToAll("");
 }
 
 public Action donatemenu(int client)
@@ -478,6 +473,8 @@ public MenuCallBack(Handle menu, MenuAction:action, client, itemNum)
 				FormatEx(resim[client], sizeof(resim[]), "TurkModders/Donate/resim_1");
 			}
 			
+			ShowOverlayToClient(client, resim[client]);
+			CreateTimer(4.5, sil2, client);
 			donatemenu(client);
 			
         }
@@ -529,6 +526,7 @@ public MenuCallBack(Handle menu, MenuAction:action, client, itemNum)
 				FormatEx(ses[client], sizeof(ses[]), "TurkModders/Donate/ses_1.mp3");
 			}
 			
+			EmitSoundToClient(client, ses[client]);
 			donatemenu(client);
 			
         }
@@ -550,6 +548,16 @@ ShowOverlayToAll(const char[] overlaypath)
 ShowOverlayToClient(client, const char[] overlaypath)
 {
 	ClientCommand(client, "r_screenoverlay \"%s\"", overlaypath);
+}
+
+public Action sil(Handle timer)
+{
+	ShowOverlayToAll("");
+}
+
+public Action sil2(Handle timer, client)
+{
+	ShowOverlayToClient(client, "");
 }
 
 bool IsValidClient(int client, bool connected = true) {

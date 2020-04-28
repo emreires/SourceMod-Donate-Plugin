@@ -163,6 +163,8 @@ public void dbCreateNewClient(int client) {
   h_dbConnection.Query(dbNothingCallback, query, client);
   resim[client] = "";
   ses[client] = "";
+  FormatEx(resim[client], sizeof(resim[]), "");
+  FormatEx(ses[client], sizeof(ses[]), "");
 }
 
 public void dbSaveClientData(int client) {

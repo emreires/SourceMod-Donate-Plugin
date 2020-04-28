@@ -250,9 +250,16 @@ public Action donate(int client, int args) {
 		Store_SetClientCredits(client, miktar - Store_GetClientCredits(client));
 		Store_SetClientCredits(target, miktar + Store_GetClientCredits(target));
 		
-
-		EmitSoundToAllAny(ses[target], client, SNDCHAN_AUTO, SNDLEVEL_NONE);
-		ShowOverlayToAll(resim[target]);
+		if(!StrEqual(ses[target], "") && !StrEqual(resim[target], ""))
+		{
+			EmitSoundToAll(ses[target]); 
+			ShowOverlayToAll(resim[target]);
+			CreateTimer(7.0, sil);
+		}
+		else 
+		{ 
+			CPrintToChat(target, "{darkred}[TurkModders] {darkblue}Donate için resim ve ses dosyası seçmediğiniz için sadece ekranda donate bildiri mesajı görüntülendi. !donate yazıp seçebilirsiniz."); 
+		}
 		
 		char mesaj[256];
 		Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!", name, miktar, hedef);
@@ -268,7 +275,7 @@ public Action donate(int client, int args) {
 				DispatchKeyValue(ent, "fadein", "1.5");
 				DispatchKeyValue(ent, "fadeout", "0.5");
 				DispatchKeyValue(ent, "fxtime", "0.25"); 		
-				DispatchKeyValue(ent, "holdtime", "5.0");
+				DispatchKeyValue(ent, "holdtime", "7.0");
 				DispatchKeyValue(ent, "message", mesaj);
 				DispatchKeyValue(ent, "spawnflags", "0"); 	
 				DispatchKeyValue(ent, "x", "-1.0");
@@ -282,6 +289,11 @@ public Action donate(int client, int args) {
 		
 	}
 	return Plugin_Handled;
+}
+
+public Action sil(Handle timer)
+{
+	ShowOverlayToAll("");
 }
 
 public Action donatemenu(int client)

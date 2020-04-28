@@ -113,7 +113,7 @@ public void dbCreateTables() {
 
   char query[512];
 
-  Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS `turkmodders_donate` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `steamid` VARCHAR(18), `resim` VARCHAR(255), `ses` VARCHAR(255), `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP, `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP);");
+  Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS `turkmodders_donate` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `steamid` VARCHAR(18), `resim` VARCHAR(255), `ses` VARCHAR(255));");
   SQL_FastQuery(h_dbConnection, query); 
 }
 
@@ -176,7 +176,7 @@ public void dbSaveClientData(int client) {
 
     GetClientAuthId(client, AuthId_SteamID64, steamId, sizeof(steamId));
 
-    Format(query, sizeof(query), "UPDATE `turkmodders_donate` SET `resim`= %s, `ses`= %s, `updated_at` = datetime('now') WHERE steamid = '%s'", resim[client], ses[client], steamId);
+    Format(query, sizeof(query), "UPDATE `turkmodders_donate` SET `resim`= '%s', `ses`= '%s' WHERE steamid = '%s'", resim[client], ses[client], steamId);
     h_dbConnection.Query(dbNothingCallback, query, client);
 
   }
@@ -224,7 +224,7 @@ public Action donate(int client, int args) {
 		GetCmdArg(1, arg1, sizeof(arg1));
 		char arg2[32];
 		GetCmdArg(2, arg2, sizeof(arg2));
-		int target = FindTarget(client, arg1);
+		int target = FindTarget(client, arg1, false, false);
 		char hedef[64];
 		GetClientName(target, hedef, sizeof(hedef));
 		
@@ -249,8 +249,8 @@ public Action donate(int client, int args) {
 		}
 		
 		
-		Store_SetClientCredits(client, miktar - Store_GetClientCredits(client));
-		Store_SetClientCredits(target, miktar + Store_GetClientCredits(target));
+		Store_SetClientCredits(client, Store_GetClientCredits(client) - miktar);
+		Store_SetClientCredits(target, Store_GetClientCredits(target) + miktar);
 		
 		if(!StrEqual(ses[target], "") && !StrEqual(resim[target], ""))
 		{
@@ -265,31 +265,20 @@ public Action donate(int client, int args) {
 		
 		char mesaj[256];
 		Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!", name, miktar, hedef);
-		for (new x = 1; x <= MaxClients; x++)
+		for (new i = 1; i <= MaxClients; i++) 
 		{
-			if (IsClientInGame(x) && !IsFakeClient(x))
-			{
-				int ent = CreateEntityByName("game_text");
-				DispatchKeyValue(ent, "channel", "1");
-				DispatchKeyValue(ent, "color", "255 165 0");
-				DispatchKeyValue(ent, "color2", "0 0 0");
-				DispatchKeyValue(ent, "effect", "0");
-				DispatchKeyValue(ent, "fadein", "1.5");
-				DispatchKeyValue(ent, "fadeout", "0.5");
-				DispatchKeyValue(ent, "fxtime", "0.25"); 		
-				DispatchKeyValue(ent, "holdtime", "7.0");
-				DispatchKeyValue(ent, "message", mesaj);
-				DispatchKeyValue(ent, "spawnflags", "0"); 	
-				DispatchKeyValue(ent, "x", "-1.0");
-				DispatchKeyValue(ent, "y", "1.0"); 		
-				DispatchSpawn(ent);
-				SetVariantString("!activator");
-				AcceptEntityInput(ent,"display",x);
+			if(IsClientInGame(i))
+			{        
+				Handle hHudText = CreateHudSynchronizer();
+				SetHudTextParams(-1.0, -0.60, 7.0, 130, 34, 33, 255, 2, 0.1, 0.1, 0.1);
+				ShowSyncHudText(i, hHudText, "%s", mesaj);
+				CloseHandle(hHudText);	
 			}
 		}
 		
 		
 	}
+	
 	return Plugin_Handled;
 }
 

@@ -14,13 +14,17 @@
 #include <cstrike>
 #include <multicolors>
 #include "emitsoundany.inc"
+#include <warden>
 
 
+bool progress = false;
 char resim[MAXPLAYERS + 1][256];
 char ses[MAXPLAYERS + 1][256];
 
 Database h_dbConnection = null;
 Handle mincredits = INVALID_HANDLE;
+Handle minseslicredits = INVALID_HANDLE;
+Handle sadecekomutcu = INVALID_HANDLE;
 
 char SOUNDS_PACK[][] = {
 "TurkModders/Donate/ses_1.mp3",
@@ -47,6 +51,9 @@ public void OnPluginStart()
 {
 	dbConnect();
 	mincredits = CreateConVar("turkmodders_min_donate", "10", "Minimum donate miktari");
+	minseslicredits = CreateConVar("turkmodders_min_donate_mesaj", "500", "Minimum kac kredi donate olursa ozel mesaja izin verilsin");
+	sadecekomutcu = CreateConVar("turkmodders_sadece_kom", "1", "Sadece komutcu olan kisiye donate atilabilir 1=evet 0=hayir");
+	AutoExecConfig(true, "turkmodders_donate");
 	RegConsoleCmd("sm_donate", donate);
 	RegConsoleCmd("sm_bagis", donate);
 }
@@ -218,6 +225,12 @@ public Action donate(int client, int args) {
 	}
 	else
 	{
+		if(progress)
+		{
+			CPrintToChat(client, "{darkred}[TurkModders] {darkblue}Şuan bir donate gösteriliyor, lütfen birazdan tekrar deneyiniz.");
+			return Plugin_Handled;
+		}
+		
 		char name[256];
 		GetClientName(client, name, sizeof(name));
 		char arg1[32];
@@ -228,12 +241,27 @@ public Action donate(int client, int args) {
 		char hedef[64];
 		GetClientName(target, hedef, sizeof(hedef));
 		
+		
 		if (target == -1)
 		{
 			CPrintToChat(client, "{darkred}[TurkModders] {darkblue}Hedef bulunamadı.");
 			return Plugin_Handled;
 		}
 		
+		if(target == client)
+		{
+			CPrintToChat(client, "{darkred}[TurkModders] {darkblue}Kendinize donate atamazsınız.");
+			return Plugin_Handled;
+		}
+		
+		if(GetConVarInt(sadecekomutcu) == 1)
+		{
+			if(!warden_iswarden(target))
+			{
+				CPrintToChat(client, "{darkred}[TurkModders] {darkblue}Sadece komutçu olan kişiye donate atılabilir.");
+				return Plugin_Handled;
+			}
+		}
 		
 		int miktar = StringToInt(arg2);
 		if(miktar < GetConVarInt(mincredits))
@@ -248,31 +276,73 @@ public Action donate(int client, int args) {
 			return Plugin_Handled;
 		}
 		
+		char mesaj[256];
+		
+		if(miktar >= GetConVarInt(minseslicredits))
+		{
+			char arg3[32];
+			GetCmdArgString(arg3, sizeof(arg3));
+			ReplaceString(arg3, sizeof(arg3), arg1, "", false);
+			ReplaceString(arg3, sizeof(arg3), arg2, "", false);
+			if(!StrEqual(arg3, ""))
+			{
+				Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!\n%s", name, miktar, hedef, name, arg3);
+			}
+			else
+			{
+				
+				Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!", name, miktar, hedef);
+			}
+		}
+		else
+		{
+			
+			Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!", name, miktar, hedef);
+		}
+		
 		
 		Store_SetClientCredits(client, Store_GetClientCredits(client) - miktar);
 		Store_SetClientCredits(target, Store_GetClientCredits(target) + miktar);
-		
+		progress = true;
 		if(!StrEqual(ses[target], "") && !StrEqual(resim[target], ""))
 		{
 			EmitSoundToAll(ses[target]); 
 			ShowOverlayToAll(resim[target]);
-			CreateTimer(4.5, sil);
+			CreateTimer(5.0, sil);
 		}
 		else 
 		{ 
 			CPrintToChat(target, "{darkred}[TurkModders] {darkblue}Donate için resim ve ses dosyası seçmediğiniz için sadece ekranda donate bildiri mesajı görüntülendi. !donate yazıp seçebilirsiniz."); 
 		}
 		
-		char mesaj[256];
-		Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!", name, miktar, hedef);
+		CreateTimer(5.0, temizle);
+		
 		for (new i = 1; i <= MaxClients; i++) 
 		{
 			if(IsClientInGame(i))
 			{        
-				Handle hHudText = CreateHudSynchronizer();
-				SetHudTextParams(-1.0, -0.60, 4.5, 130, 34, 33, 255, 2, 0.1, 0.1, 0.1);
-				ShowSyncHudText(i, hHudText, "%s", mesaj);
-				CloseHandle(hHudText);	
+				char sBuffer[64];	
+				int color_r = GetRandomInt(0, 255);
+				int color_g = GetRandomInt(0, 255);
+				int color_b = GetRandomInt(0, 255);
+				Format(sBuffer, sizeof(sBuffer), "%i %i %i", color_r, color_g, color_b);
+				int ent = CreateEntityByName("game_text");
+				DispatchKeyValue(ent, "channel", "1");
+				DispatchKeyValue(ent, "color", "0 0 0");
+				DispatchKeyValue(ent, "color2", sBuffer);
+				DispatchKeyValue(ent, "effect", "2");
+				DispatchKeyValue(ent, "fadein", "0.1");
+				DispatchKeyValue(ent, "fadeout", "0.1");
+				DispatchKeyValue(ent, "fxtime", "4.0"); 		
+				DispatchKeyValue(ent, "holdtime", "5.0");
+				DispatchKeyValue(ent, "message", mesaj);
+				DispatchKeyValue(ent, "spawnflags", "0"); 	
+				DispatchKeyValue(ent, "x", "-1.0");
+				DispatchKeyValue(ent, "y", "-0.60"); 		
+				DispatchSpawn(ent);
+				SetVariantString("!activator");
+				AcceptEntityInput(ent,"display", i);
+			
 			}
 		}
 		
@@ -553,6 +623,12 @@ ShowOverlayToClient(client, const char[] overlaypath)
 public Action sil(Handle timer)
 {
 	ShowOverlayToAll("");
+	progress = false;
+}
+
+public Action temizle(Handle timer)
+{
+	progress = false;
 }
 
 public Action sil2(Handle timer, client)

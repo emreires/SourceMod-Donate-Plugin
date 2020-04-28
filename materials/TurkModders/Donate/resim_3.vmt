@@ -1,5 +1,5 @@
 "MonitorScreen"
 {
-	"$basetexture" "Plugincim_com/Donate/Resim_3"
+	"$basetexture" "TurkModders/Donate/Resim_3"
 	"$translucent" 1
 }

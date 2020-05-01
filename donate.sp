@@ -26,6 +26,10 @@ Handle mincredits = INVALID_HANDLE;
 Handle minseslicredits = INVALID_HANDLE;
 Handle sadecekomutcu = INVALID_HANDLE;
 
+int ses_ayar[MAXPLAYERS + 1] = 1;
+int resim_ayar[MAXPLAYERS + 1] = 1;
+int yazi_ayar[MAXPLAYERS + 1] = 1;
+
 char SOUNDS_PACK[][] = {
 "TurkModders/Donate/ses_1.mp3",
 "TurkModders/Donate/ses_2.mp3",
@@ -120,7 +124,7 @@ public void dbCreateTables() {
 
   char query[512];
 
-  Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS `turkmodders_donate` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `steamid` VARCHAR(18), `resim` VARCHAR(255), `ses` VARCHAR(255));");
+  Format(query, sizeof(query), "CREATE TABLE IF NOT EXISTS `turkmodders_donate` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `steamid` VARCHAR(18), `resim` VARCHAR(255), `ses` VARCHAR(255), `ses_ayar` INTEGER DEFAULT 1, `resim_ayar` INTEGER DEFAULT 1, `yazi_ayar` INTEGER DEFAULT 1);");
   SQL_FastQuery(h_dbConnection, query); 
 }
 
@@ -142,7 +146,7 @@ public void dbGetClientData(int client) {
 
   GetClientAuthId(client, AuthId_SteamID64, steamId, sizeof(steamId));
 
-  Format(query, sizeof(query), "SELECT resim, ses FROM turkmodders_donate WHERE steamid = '%s'", steamId);
+  Format(query, sizeof(query), "SELECT resim, ses, ses_ayar, resim_ayar, yazi_ayar FROM turkmodders_donate WHERE steamid = '%s'", steamId);
   h_dbConnection.Query(dbGetClientDataCallback, query, client);
 }
 
@@ -150,6 +154,9 @@ public void dbGetClientDataCallback(Database dbConn, DBResultSet results, const 
   if (results.FetchRow()) {
 	results.FetchString(0, resim[client], sizeof(resim[]));
 	results.FetchString(1, ses[client], sizeof(ses[]));
+	ses_ayar[client] = results.FetchInt(2);
+	resim_ayar[client] = results.FetchInt(3);
+	yazi_ayar[client] = results.FetchInt(4);
   } else {
     dbCreateNewClient(client);
   }
@@ -166,12 +173,15 @@ public void dbCreateNewClient(int client) {
   GetClientAuthId(client, AuthId_SteamID64, steamId, sizeof(steamId));
 
 
-  Format(query, sizeof(query), "INSERT INTO turkmodders_donate (`steamid`, `resim`, `ses`) VALUES ('%s', '', '')", steamId);
+  Format(query, sizeof(query), "INSERT INTO turkmodders_donate (`steamid`, `resim`, `ses`, `resim_ayar`, `ses_ayar`, `yazi_ayar`) VALUES ('%s', '', '', '1', '1', '1')", steamId);
   h_dbConnection.Query(dbNothingCallback, query, client);
   resim[client] = "";
   ses[client] = "";
   FormatEx(resim[client], sizeof(resim[]), "");
   FormatEx(ses[client], sizeof(ses[]), "");
+  ses_ayar[client] = 1;
+  resim_ayar[client] = 1;
+  yazi_ayar[client] = 1;
 }
 
 public void dbSaveClientData(int client) {
@@ -183,7 +193,7 @@ public void dbSaveClientData(int client) {
 
     GetClientAuthId(client, AuthId_SteamID64, steamId, sizeof(steamId));
 
-    Format(query, sizeof(query), "UPDATE `turkmodders_donate` SET `resim`= '%s', `ses`= '%s' WHERE steamid = '%s'", resim[client], ses[client], steamId);
+    Format(query, sizeof(query), "UPDATE `turkmodders_donate` SET `resim`= '%s', `ses`= '%s', `resim_ayar`= '%i', `ses_ayar`= '%i', `yazi_ayar`= '%i', WHERE steamid = '%s'", resim[client], ses[client], resim_ayar[client], ses_ayar[client], yazi_ayar[client], steamId);
     h_dbConnection.Query(dbNothingCallback, query, client);
 
   }
@@ -306,9 +316,24 @@ public Action donate(int client, int args) {
 		progress = true;
 		if(!StrEqual(ses[target], "") && !StrEqual(resim[target], ""))
 		{
-			EmitSoundToAll(ses[target]); 
-			ShowOverlayToAll(resim[target]);
-			CreateTimer(5.0, sil);
+			for (new i = 1; i <= MaxClients; i++) 
+			{
+				if(IsClientInGame(i))
+				{
+					if(ses_ayar[i] == 1)
+					{
+						EmitSoundToClient(i, ses[target]);
+					}
+					
+					if(resim_ayar[i] == 1)
+					{
+						ShowOverlayToClient(i, resim[target]);
+						CreateTimer(5.0, sil);
+					}
+				}
+			}
+			
+			
 		}
 		else 
 		{ 
@@ -319,7 +344,7 @@ public Action donate(int client, int args) {
 		
 		for (new i = 1; i <= MaxClients; i++) 
 		{
-			if(IsClientInGame(i))
+			if(IsClientInGame(i) && yazi_ayar[i] == 1)
 			{        
 				char sBuffer[64];	
 				int color_r = GetRandomInt(0, 255);
@@ -466,6 +491,9 @@ public Action donatemenu(int client)
    	}
    	
     AddMenuItem(menu, "option2", opcionmenu);
+    
+    Format(opcionmenu, 124, "✦ Bağış Ayarları");
+    AddMenuItem(menu, "option3", opcionmenu);
 
     SetMenuExitBackButton(menu, true);
     SetMenuPagination(menu, MENU_NO_PAGINATION);
@@ -600,6 +628,114 @@ public MenuCallBack(Handle menu, MenuAction:action, client, itemNum)
 			donatemenu(client);
 			
         }
+        
+        if ( strcmp(info,"option3") == 0 )
+        {
+			donateayar(client);
+        }
+    }
+    
+}
+
+public Action donateayar(int client)
+{
+    Handle menu = CreateMenu(MenuCallBack2);
+    SetMenuTitle(menu, "★ Bağış (Donate) Sistemi Bildirim Ayarları ★");
+    char opcionmenu[124];
+
+
+    if(resim_ayar[client] == 1)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Resmi Gösterme: ✔️");
+   	}
+   	else if(resim_ayar[client] == 0)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Resmi Gösterme: ❌");
+   	}
+
+    AddMenuItem(menu, "option1", opcionmenu);
+    
+    if(ses_ayar[client] == 1)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Sesi Çalma: ✔️");
+   	}
+   	else if(ses_ayar[client] == 0)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Sesi Çalma: ❌");
+   	}
+
+    AddMenuItem(menu, "option2", opcionmenu);
+
+
+    if(yazi_ayar[client] == 1)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Yazı (Bildirim) Gösterme: ✔️");
+   	}
+   	else if(yazi_ayar[client] == 0)
+    {
+    	Format(opcionmenu, 124, "✦ Bağış Yazı (Bildirim) Gösterme: ❌");
+   	}
+
+    AddMenuItem(menu, "option3", opcionmenu);
+
+    SetMenuExitBackButton(menu, true);
+    SetMenuPagination(menu, MENU_NO_PAGINATION);
+    DisplayMenu(menu, client, MENU_TIME_FOREVER);
+    return Plugin_Handled;
+}
+
+public MenuCallBack2(Handle menu, MenuAction:action, client, itemNum)
+{
+    if ( action == MenuAction_Select )
+    {
+        char info[32];
+
+        GetMenuItem(menu, itemNum, info, sizeof(info));
+        if ( strcmp(info,"option1") == 0 )
+        {
+			if(resim_ayar[client] == 1)
+			{
+				resim_ayar[client] = 0;
+			}
+			else if(resim_ayar[client] == 0)
+			{
+				resim_ayar[client] = 1;
+			}
+			
+			donateayar(client);
+			
+        }
+        
+		else if ( strcmp(info,"option2") == 0 )
+        {
+			if(ses_ayar[client] == 1)
+			{
+				ses_ayar[client] = 0;
+			}
+			else if(ses_ayar[client] == 0)
+			{
+				ses_ayar[client] = 1;
+			}
+			
+			donateayar(client);
+			
+        }	
+        
+		else if ( strcmp(info,"option3") == 0 )
+        {
+			if(yazi_ayar[client] == 1)
+			{
+				yazi_ayar[client] = 0;
+			}
+			else if(yazi_ayar[client] == 0)
+			{
+				yazi_ayar[client] = 1;
+			}
+			
+			donateayar(client);
+			
+        }
+        
     }
     
 }

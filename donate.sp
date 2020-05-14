@@ -286,7 +286,7 @@ public Action donate(int client, int args) {
 			return Plugin_Handled;
 		}
 		
-		char mesaj[256];
+		char mesaj[512];
 		
 		if(miktar >= GetConVarInt(minseslicredits))
 		{
@@ -296,7 +296,7 @@ public Action donate(int client, int args) {
 			ReplaceString(arg3, sizeof(arg3), arg2, "", false);
 			if(!StrEqual(arg3, ""))
 			{
-				Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!\n%s", name, miktar, hedef, name, arg3);
+				Format(mesaj, sizeof(mesaj), "%s tarafından %i kredi %s'e bağış yapıldı!\n%s", name, miktar, hedef, arg3);
 			}
 			else
 			{

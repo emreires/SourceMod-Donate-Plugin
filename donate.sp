@@ -345,8 +345,13 @@ public Action donate(int client, int args) {
 		for (new i = 1; i <= MaxClients; i++) 
 		{
 			if(IsClientInGame(i) && yazi_ayar[i] == 1)
-			{        
-				char sBuffer[64];	
+			{   
+				int color_r = GetRandomInt(0, 255);
+				int color_g = GetRandomInt(0, 255);
+				int color_b = GetRandomInt(0, 255);
+				SetHudTextParams(-1.0, -0.60, 5.0, color_r, color_g, color_b, 255, 2, 4.0, 0.1, 0.1);
+				ShowHudText(i, -1, mesaj);					
+				/*char sBuffer[64];	
 				int color_r = GetRandomInt(0, 255);
 				int color_g = GetRandomInt(0, 255);
 				int color_b = GetRandomInt(0, 255);
@@ -366,7 +371,7 @@ public Action donate(int client, int args) {
 				DispatchKeyValue(ent, "y", "-0.60"); 		
 				DispatchSpawn(ent);
 				SetVariantString("!activator");
-				AcceptEntityInput(ent,"display", i);
+				AcceptEntityInput(ent,"display", i);*/
 			
 			}
 		}

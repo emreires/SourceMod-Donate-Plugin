@@ -290,8 +290,10 @@ public Action donate(int client, int args) {
 		
 		if(miktar >= GetConVarInt(minseslicredits))
 		{
-			char arg3[32];
+			char arg3[256];
 			GetCmdArgString(arg3, sizeof(arg3));
+			arg1 = "";
+			arg2 = "";
 			ReplaceString(arg3, sizeof(arg3), arg1, "", false);
 			ReplaceString(arg3, sizeof(arg3), arg2, "", false);
 			if(!StrEqual(arg3, ""))

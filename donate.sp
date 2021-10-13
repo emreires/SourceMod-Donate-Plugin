@@ -54,10 +54,10 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	dbConnect();
-	mincredits = CreateConVar("turkmodders_min_donate", "10", "Minimum donate miktari");
-	minseslicredits = CreateConVar("turkmodders_min_donate_mesaj", "500", "Minimum kac kredi donate olursa ozel mesaja izin verilsin");
-	sadecekomutcu = CreateConVar("turkmodders_sadece_kom", "1", "Sadece komutcu olan kisiye donate atilabilir 1=evet 0=hayir");
-	AutoExecConfig(true, "turkmodders_donate");
+	mincredits = CreateConVar("wasdzone_min_donate", "10", "Minimum donate miktari");
+	minseslicredits = CreateConVar("wasdzone_min_donate_mesaj", "500", "Minimum kac kredi donate olursa ozel mesaja izin verilsin");
+	sadecekomutcu = CreateConVar("wasdzone_sadece_kom", "1", "Sadece komutcu olan kisiye donate atilabilir 1=evet 0=hayir");
+	AutoExecConfig(true, "wasdzone_donate");
 	RegConsoleCmd("sm_donate", donate);
 	RegConsoleCmd("sm_bagis", donate);
 }
